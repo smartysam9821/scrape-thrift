@@ -147,6 +147,16 @@ Safety controls:
 .\.venv\Scripts\python.exe thriftbooks_scraper.py --write-mysql --stop-after-blocks 3
 .\.venv\Scripts\python.exe thriftbooks_scraper.py --write-mysql --rescrape-hours 12
 .\.venv\Scripts\python.exe thriftbooks_scraper.py --write-mysql --no-skip-recent
+.\.venv\Scripts\python.exe thriftbooks_scraper.py --write-mysql --batch-size 25
 ```
 
 By default, MySQL runs skip ISBNs scraped in the last 12 hours. If an ISBN is older than 12 hours, it is scraped again and the existing ISBN row is updated. New ISBNs receive the next available id. The scraper retries once on block-like HTTP responses, backs off before retrying, and stops after 3 consecutive blocked responses.
+
+The scraper flushes every 25 ISBNs by default:
+
+- inserts/updates MySQL
+- rewrites `results/thriftbooks_results.csv`
+- rewrites `results/thriftbooks_results.jsonl`
+- appends a checkpoint line to `results/progress.log`
+
+This makes the job resumable. If the process stops, run the same command again. Already scraped ISBNs from the last 12 hours are skipped.

@@ -63,6 +63,54 @@ class BlockMonitor:
                 self.stop_event.set()
 
 
+class BatchWriter:
+    def __init__(self, args: argparse.Namespace, output_dir: Path) -> None:
+        self.args = args
+        self.output_dir = output_dir
+        self.buffer: list[ScrapeResult] = []
+        self.all_results: list[ScrapeResult] = []
+        self.lock = asyncio.Lock()
+        self.started_at = datetime.now()
+        self.progress_log = output_dir / "progress.log"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    async def add(self, result: "ScrapeResult") -> None:
+        async with self.lock:
+            self.buffer.append(result)
+            self.all_results.append(result)
+            if len(self.buffer) >= self.args.batch_size:
+                self.flush_locked()
+
+    async def flush(self) -> None:
+        async with self.lock:
+            self.flush_locked()
+
+    def flush_locked(self) -> None:
+        if not self.buffer:
+            return
+        batch = list(self.buffer)
+        self.buffer.clear()
+
+        if self.args.write_mysql:
+            write_mysql(self.args, batch)
+        write_outputs(self.all_results, self.output_dir)
+        self.write_progress(batch)
+
+    def write_progress(self, batch: list["ScrapeResult"]) -> None:
+        total = len(self.all_results)
+        in_stock = sum(1 for result in self.all_results if result.stock_status == "IN_STOCK")
+        blocked = sum(1 for result in self.all_results if result.stock_status.startswith("BLOCKED"))
+        errors = sum(1 for result in self.all_results if result.stock_status.startswith("ERROR"))
+        elapsed = int((datetime.now() - self.started_at).total_seconds())
+        line = (
+            f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} "
+            f"flushed={len(batch)} total={total} in_stock={in_stock} "
+            f"blocked={blocked} errors={errors} elapsed_sec={elapsed}"
+        )
+        with self.progress_log.open("a", encoding="utf-8") as file:
+            file.write(line + "\n")
+
+
 @dataclass
 class IsbnRecord:
     isbn: str
@@ -440,6 +488,7 @@ async def scrape_worker(
     args: argparse.Namespace,
     limiter: RateLimiter,
     block_monitor: BlockMonitor,
+    batch_writer: BatchWriter,
 ) -> None:
     page = await context.new_page()
     try:
@@ -455,6 +504,7 @@ async def scrape_worker(
             row_id = args.start_id + index
             result = await scrape_one(page, row_id, record, args, limiter)
             results_by_index[index] = result
+            await batch_writer.add(result)
             await block_monitor.record(result.stock_status.startswith("BLOCKED"))
             progress.advance(task_id)
             queue.task_done()
@@ -677,6 +727,7 @@ async def run(args: argparse.Namespace) -> int:
             await context.route("**/*", block_heavy_assets)
         limiter = RateLimiter(args.requests_per_minute)
         block_monitor = BlockMonitor(args.stop_after_blocks)
+        batch_writer = BatchWriter(args, output_dir)
 
         with Progress(
             SpinnerColumn(),
@@ -695,20 +746,30 @@ async def run(args: argparse.Namespace) -> int:
             worker_count = min(args.concurrency, len(records))
             await asyncio.gather(
                 *[
-                    scrape_worker(worker_id, context, queue, results_by_index, progress, task, args, limiter, block_monitor)
+                    scrape_worker(
+                        worker_id,
+                        context,
+                        queue,
+                        results_by_index,
+                        progress,
+                        task,
+                        args,
+                        limiter,
+                        block_monitor,
+                        batch_writer,
+                    )
                     for worker_id in range(1, worker_count + 1)
                 ]
             )
+            await batch_writer.flush()
             results = [results_by_index[index] for index in sorted(results_by_index)]
 
         await context.close()
         await browser.close()
 
+    csv_path, jsonl_path = output_dir / "thriftbooks_results.csv", output_dir / "thriftbooks_results.jsonl"
     if args.write_mysql:
-        write_mysql(args, results)
         console.print(f"MySQL: inserted/updated {len(results)} rows in thriftbooks_inv")
-
-    csv_path, jsonl_path = write_outputs(results, output_dir)
 
     found_count = sum(1 for result in results if result.stock_status == "IN_STOCK")
     blocked_count = sum(1 for result in results if result.stock_status.startswith("BLOCKED"))
@@ -736,6 +797,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--stop-after-blocks", type=int, default=3, help="Stop workers after this many consecutive blocked responses. Use 0 to disable.")
     parser.add_argument("--skip-recent", action=argparse.BooleanOptionalAction, default=True, help="Skip ISBNs already scraped recently when --write-mysql is used.")
     parser.add_argument("--rescrape-hours", type=int, default=12, help="Recent scrape window used by --skip-recent.")
+    parser.add_argument("--batch-size", type=int, default=25, help="Flush CSV/JSONL/MySQL and progress log every N scraped ISBNs.")
     parser.add_argument("--timeout-ms", type=int, default=30_000, help="Page load timeout.")
     parser.add_argument("--headed", action="store_true", help="Show the browser window.")
     parser.add_argument("--start-id", type=int, default=1, help="First id value for thriftbooks_inv rows.")
