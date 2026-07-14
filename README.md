@@ -24,15 +24,69 @@ thriftbooks_inv (
 
 ## Setup
 
-The `.venv` and Playwright Chromium browser are already installed.
+Fresh server setup from GitHub:
 
-To reinstall later:
+```powershell
+git clone https://github.com/smartysam9821/scrape-thrift.git
+cd scrape-thrift
+```
+
+If the repo already exists on the server:
+
+```powershell
+cd scrape-thrift
+git pull
+```
+
+Create Python virtual environment and install dependencies:
 
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m playwright install chromium
 ```
+
+On Linux:
+
+```bash
+python3.12 -m venv .venv
+./.venv/bin/python -m pip install -r requirements.txt
+./.venv/bin/python -m playwright install chromium
+```
+
+## MySQL
+
+Start MySQL 8.0 with Docker:
+
+```powershell
+docker run --name scrape-mysql `
+  -e MYSQL_ROOT_PASSWORD=scrape_root_password `
+  -e MYSQL_DATABASE=scrape_db `
+  -e MYSQL_USER=scrape_user `
+  -e MYSQL_PASSWORD=scrape_password `
+  -p 3306:3306 `
+  -d mysql:8.0
+```
+
+On Linux/macOS:
+
+```bash
+docker run --name scrape-mysql \
+  -e MYSQL_ROOT_PASSWORD=scrape_root_password \
+  -e MYSQL_DATABASE=scrape_db \
+  -e MYSQL_USER=scrape_user \
+  -e MYSQL_PASSWORD=scrape_password \
+  -p 3306:3306 \
+  -d mysql:8.0
+```
+
+If container already exists:
+
+```powershell
+docker start scrape-mysql
+```
+
+The scraper creates or updates the `thriftbooks_inv` table automatically.
 
 ## Run
 
@@ -46,6 +100,12 @@ To also insert/update rows in MySQL:
 
 ```powershell
 .\.venv\Scripts\python.exe thriftbooks_scraper.py --write-mysql
+```
+
+Linux:
+
+```bash
+./.venv/bin/python thriftbooks_scraper.py --write-mysql
 ```
 
 Default MySQL connection:
