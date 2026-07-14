@@ -1,6 +1,5 @@
 .venv/
-tmp/*
-!tmp/.gitkeep
+tmp/
 .tmp/
 results/*
 !results/.gitkeep
