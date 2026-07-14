@@ -1,6 +1,10 @@
 .venv/
-tmp/
+tmp/*
+!tmp/.gitkeep
 .tmp/
-results/
+results/*
+!results/.gitkeep
+isbn/*
+!isbn/.gitkeep
 __pycache__/
 *.pyc
