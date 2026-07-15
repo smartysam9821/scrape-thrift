@@ -414,10 +414,11 @@ h3 {
 
 .mini-row {
   display: grid;
-  grid-template-columns: 110px 1fr auto;
-  gap: 10px;
+  grid-template-columns: 140px minmax(110px, 1fr) auto;
+  gap: 16px;
+  align-items: center;
   border-bottom: 1px solid var(--line);
-  padding: 8px 0;
+  padding: 13px 0;
 }
 
 .mini-row span:first-child,
@@ -550,6 +551,11 @@ h3 {
   font-size: 12px;
 }
 
+.mini-row strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
 .section-label {
   margin: 18px 0 12px;
   border-top: 1px solid var(--line);
@@ -563,14 +569,29 @@ h3 {
 
 .breakdown {
   display: grid;
-  gap: 14px;
+  gap: 16px;
+  margin-top: 6px;
 }
 
 .breakdown div {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
+  align-items: center;
   color: #b8d7e8;
+}
+
+.breakdown span {
+  color: #b8d7e8;
+  font-weight: 500;
+}
+
+.breakdown strong {
+  justify-self: end;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .breakdown i {
@@ -587,6 +608,10 @@ h3 {
 
 .breakdown i.muted {
   background: #6d8490;
+}
+
+.breakdown + .section-label {
+  margin-top: 24px;
 }
 
 .job-form .wide {
