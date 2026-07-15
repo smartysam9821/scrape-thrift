@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Scrape Ledger</title>
+    <title>ThriftBooks scraper</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
     <section class="login-view" id="loginView">
       <form class="login-card" id="loginForm">
-        <div class="mark"><span></span><strong>Scrape Ledger</strong></div>
-        <h1>Sign in to operations</h1>
+        <div class="mark"><span></span><strong>ThriftBooks</strong></div>
+        <h1>Sign in</h1>
         <p>Monitor scraping jobs, inventory freshness, and source configuration from one console.</p>
         <label>Username<input name="username" autocomplete="username" required /></label>
         <label>Password<input name="password" type="password" autocomplete="current-password" required /></label>
@@ -24,21 +24,19 @@
         <div class="brand">
           <div class="book-spine"></div>
           <div>
-            <strong>Scrape Ledger</strong>
-            <small>catalog ops</small>
+            <strong>ThriftBooks</strong>
+            <small>scraper console</small>
           </div>
         </div>
         <nav class="nav">
           <button class="nav-item active" data-page="overview" type="button">Overview</button>
           <button class="nav-item" data-page="jobs" type="button">Jobs</button>
           <button class="nav-item" data-page="inventory" type="button">Inventory</button>
-          <button class="nav-item" data-page="sources" type="button">Sources</button>
-          <button class="nav-item" data-page="config" type="button">Configurations</button>
+          <button class="nav-item" data-page="settings" type="button">Settings</button>
         </nav>
         <div class="sidebar-footer">
           <span class="online-dot"></span>
-          <span>admin</span>
-          <button id="logoutButton" type="button">Sign out</button>
+          <span>admin · signed in</span>
         </div>
       </aside>
 
@@ -46,51 +44,69 @@
         <header class="page-head">
           <div>
             <div class="eyebrow" id="pageEyebrow">Overview</div>
-            <h2 id="pageTitle">Scrape operations</h2>
-            <p id="pageDescription">Run safe, resumable inventory scrapes across multiple sources.</p>
+            <h2 id="pageTitle">Good afternoon</h2>
+            <p id="pageDescription">Last completed run finished recently. Inventory is current as of then.</p>
           </div>
           <div class="head-actions">
-            <button type="button" id="refreshButton">Refresh</button>
-            <button class="primary" type="button" data-jump="jobs">New job</button>
+            <button type="button" id="refreshButton">Export CSV</button>
+            <button class="primary" type="button" data-jump="jobs">Start scrape</button>
           </div>
         </header>
 
         <section class="page active" id="overviewPage">
           <div class="stats-grid">
-            <article class="stat"><span>Total ISBN inputs</span><strong id="isbnCount">0</strong><small>from isbn folder</small></article>
-            <article class="stat"><span>Latest CSV rows</span><strong id="resultCount">0</strong><small>results file</small></article>
-            <article class="stat"><span>Job state</span><strong id="jobState">Idle</strong><small>FastAPI worker</small></article>
-            <article class="stat"><span>Flush interval</span><strong>25</strong><small>rows per batch</small></article>
+            <article class="stat"><span>Total ISBNs</span><strong id="isbnCount">0</strong><small>tracked in catalog</small></article>
+            <article class="stat"><span>Scraped today</span><strong id="resultCount">0</strong><small>across jobs</small></article>
+            <article class="stat"><span>In stock</span><strong id="inStockPct">0%</strong><small>of scraped titles</small></article>
+            <article class="stat"><span>Blocks (24h)</span><strong id="blockCount">0</strong><small>below stop threshold (3)</small></article>
           </div>
           <div class="layout-two">
             <article class="card">
-              <div class="card-head"><h3>Current progress</h3><span class="tag" id="progressTag">ready</span></div>
+              <div class="card-head"><h3>Current job</h3><span class="tag" id="progressTag">ready</span></div>
               <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+              <div class="progress-meta"><span id="progressCount">0 / 0 ISBNs</span><span>concurrency 3 · 20 req/min</span></div>
+              <div class="section-label">Live log</div>
               <pre class="log" id="progressLog">No progress yet.</pre>
             </article>
             <article class="card">
-              <div class="card-head"><h3>Recent inventory</h3><button type="button" data-jump="inventory">View all</button></div>
+              <div class="card-head"><h3>Stock breakdown</h3></div>
+              <div class="breakdown">
+                <div><span>In stock</span><strong id="stockInLabel">0%</strong><i style="width:72%"></i></div>
+                <div><span>Out of stock</span><strong id="stockOutLabel">0%</strong><i class="red" style="width:21%"></i></div>
+                <div><span>Unlisted / removed</span><strong id="stockUnknownLabel">0%</strong><i class="muted" style="width:7%"></i></div>
+              </div>
+              <div class="section-label">Recently flagged</div>
               <div class="mini-table" id="recentInventory"></div>
             </article>
           </div>
         </section>
 
         <section class="page" id="jobsPage">
-          <div class="layout-two">
+          <div class="layout-two jobs-layout">
             <article class="card">
-              <div class="card-head"><h3>New scrape job</h3><span class="tag in-stock">resumable</span></div>
+              <div class="card-head"><h3>New job</h3></div>
+              <label>ISBN source file<select><option>IM_Active_ISBN.txt</option></select></label>
+              <small class="hint">Drop new .txt files below, or upload one now.</small>
+              <label>Upload a new file<div class="drop-zone">Drag a .txt file here, or browse</div></label>
               <form class="job-form" id="jobForm">
-                <label>Source<select id="sourceInput"><option>ThriftBooks</option><option disabled>Amazon</option><option disabled>AbeBooks</option></select></label>
-                <label>ISBN limit<input id="limitInput" type="number" min="1" value="780" /></label>
-                <label>Requests/minute<input id="rpmInput" type="number" min="1" max="60" value="20" /></label>
                 <label>Concurrency<input id="concurrencyInput" type="number" min="1" max="5" value="3" /></label>
-                <label>Batch size<input id="batchInput" type="number" min="1" value="25" /></label>
+                <label>Requests per minute<input id="rpmInput" type="number" min="1" max="60" value="20" /></label>
+                <label>Min delay (ms)<input value="1000" /></label>
+                <label>Max delay (ms)<input value="3000" /></label>
+                <label class="wide">ISBN limit<input id="limitInput" type="number" min="1" value="780" /></label>
+                <label>Flush batch size<input id="batchInput" type="number" min="1" value="25" /></label>
                 <label>Rescrape hours<input id="freshnessInput" type="number" min="0" value="12" /></label>
               </form>
               <button class="primary full" id="startJobButton" type="button">Start job</button>
             </article>
             <article class="card">
-              <div class="card-head"><h3>Generated command</h3><button type="button" id="copyCommand">Copy</button></div>
+              <div class="card-head"><h3>Running now</h3><span class="tag" id="jobStatusTag">idle</span></div>
+              <div class="progress-track"><div class="progress-fill" style="width:64%"></div></div>
+              <div class="progress-meta"><span>642 / 1,000 ISBNs</span><span>concurrency 3 · 20 req/min</span></div>
+              <button class="danger full" type="button">Stop job</button>
+              <div class="section-label">History</div>
+              <table class="ledger compact"><tbody><tr><td>#214</td><td>10:02 AM</td><td>1,000</td><td><span class="tag">complete</span></td></tr><tr><td>#213</td><td>Yesterday</td><td>980</td><td><span class="tag blocked">stopped</span></td></tr></tbody></table>
+              <div class="card-head command-head"><h3>Command</h3><button type="button" id="copyCommand">Copy</button></div>
               <pre class="command" id="commandPreview"></pre>
             </article>
           </div>
@@ -99,10 +115,10 @@
         <section class="page" id="inventoryPage">
           <article class="card">
             <div class="card-head">
-              <h3>Inventory rows</h3>
+              <h3><span id="inventoryRowCount">0</span> rows</h3>
               <div class="filters">
-                <input id="inventorySearch" placeholder="Search ISBN, publisher, status" />
-                <select id="stockFilter"><option value="">All</option><option>IN_STOCK</option><option>OUT_OF_STOCK</option><option>UNKNOWN</option></select>
+                <input id="inventorySearch" placeholder="Search ISBN or publisher" />
+                <select id="stockFilter"><option value="">All stock statuses</option><option>IN_STOCK</option><option>OUT_OF_STOCK</option><option>UNKNOWN</option></select>
               </div>
             </div>
             <div class="table-wrap">
@@ -114,16 +130,8 @@
           </article>
         </section>
 
-        <section class="page" id="sourcesPage">
-          <div class="source-grid">
-            <article class="source-card live"><h3>ThriftBooks</h3><p>ISBN lookup, publisher, price, format, condition, stock status.</p><span>Live</span></article>
-            <article class="source-card"><h3>Amazon</h3><p>Reserved for ASIN workflows and marketplace checks.</p><span>Planned</span></article>
-            <article class="source-card"><h3>AbeBooks</h3><p>Reserved for compare-price inventory jobs.</p><span>Planned</span></article>
-          </div>
-        </section>
-
-        <section class="page" id="configPage">
-          <div class="config-grid" id="configGrid"></div>
+        <section class="page" id="settingsPage">
+          <div class="settings-grid" id="configGrid"></div>
         </section>
       </main>
     </section>

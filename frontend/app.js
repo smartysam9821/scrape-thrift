@@ -6,29 +6,24 @@ const state = {
 
 const pages = {
   overview: {
-    title: "Scrape operations",
+    title: "Good afternoon",
     eyebrow: "Overview",
-    description: "Run safe, resumable inventory scrapes across multiple sources.",
+    description: "Last completed run finished recently. Inventory is current as of then.",
   },
   jobs: {
-    title: "Job launcher",
+    title: "Run a scrape",
     eyebrow: "Jobs",
-    description: "Set limits, rate controls, and batch flushing before starting a scrape.",
+    description: "Pick a source file and set the safety controls. Jobs are resumable automatically.",
   },
   inventory: {
-    title: "Inventory ledger",
+    title: "thriftbooks_inv",
     eyebrow: "Inventory",
-    description: "Review latest scraped rows from the CSV output.",
+    description: "Rows update as jobs flush every 25 ISBNs.",
   },
-  sources: {
-    title: "Scraping sources",
-    eyebrow: "Sources",
-    description: "ThriftBooks is live. More marketplaces can plug into this shell later.",
-  },
-  config: {
-    title: "Configurations",
-    eyebrow: "Config",
-    description: "Operational defaults used by FastAPI and the scraper worker.",
+  settings: {
+    title: "Connection and defaults",
+    eyebrow: "Settings",
+    description: "These become defaults for new jobs. Individual jobs can still override them from Jobs.",
   },
 };
 
@@ -101,27 +96,44 @@ async function refresh() {
 
   el("#isbnCount").textContent = Number(summary.isbn_count || 0).toLocaleString();
   el("#resultCount").textContent = Number(summary.result_count || 0).toLocaleString();
-  el("#jobState").textContent = summary.job_running ? "Running" : "Idle";
+  el("#inventoryRowCount").textContent = Number(summary.result_count || 0).toLocaleString();
   el("#progressTag").textContent = summary.job_running ? "running" : "ready";
   el("#progressTag").className = `tag ${summary.job_running ? "in-stock" : ""}`;
+  el("#jobStatusTag").textContent = summary.job_running ? "running" : "idle";
   el("#progressLog").textContent = progress.lines.length ? progress.lines.join("\n") : "No progress yet.";
 
+  renderStockStats();
   renderRecentInventory();
   renderInventory();
   renderConfig();
 }
 
 function renderRecentInventory() {
-  const rows = state.inventory.slice(0, 6);
+  const rows = state.inventory.filter((row) => row.stock_status !== "IN_STOCK").slice(0, 3);
   el("#recentInventory").innerHTML = rows.length
     ? rows.map((row) => `
       <div class="mini-row">
         <span>${row.isbn || ""}</span>
-        <strong>${row.publisher || "Unknown"}</strong>
-        <span>${money(row.price)}</span>
+        <strong>${row.stock_status || "UNKNOWN"}</strong>
+        <span>${row.last_seen_timestamp || ""}</span>
       </div>
     `).join("")
-    : "<p>No inventory rows yet.</p>";
+    : "<p>No flagged rows.</p>";
+}
+
+function renderStockStats() {
+  const total = state.inventory.length || 1;
+  const inStock = state.inventory.filter((row) => row.stock_status === "IN_STOCK").length;
+  const outStock = state.inventory.filter((row) => row.stock_status === "OUT_OF_STOCK").length;
+  const blocked = state.inventory.filter((row) => row.stock_status?.startsWith("BLOCKED")).length;
+  const unknown = Math.max(total - inStock - outStock, 0);
+  const pct = (value) => `${Math.round((value / total) * 100)}%`;
+  el("#inStockPct").textContent = pct(inStock);
+  el("#blockCount").textContent = blocked;
+  el("#stockInLabel").textContent = pct(inStock);
+  el("#stockOutLabel").textContent = pct(outStock);
+  el("#stockUnknownLabel").textContent = pct(unknown);
+  el("#progressCount").textContent = `${Number(state.summary.result_count || 0).toLocaleString()} / ${Number(state.summary.isbn_count || 0).toLocaleString()} ISBNs`;
 }
 
 function renderInventory() {
@@ -153,7 +165,7 @@ function renderConfig() {
     ["Scraper", state.config.scraper],
   ];
 
-  el("#configGrid").innerHTML = groups.map(([title, values]) => `
+el("#configGrid").innerHTML = groups.map(([title, values]) => `
     <article class="card config-card">
       <h3>${title}</h3>
       <dl>
@@ -197,7 +209,6 @@ loginForm.addEventListener("submit", async (event) => {
   }
 });
 
-el("#logoutButton").addEventListener("click", () => setAuthed(false));
 el("#refreshButton").addEventListener("click", refresh);
 el("#copyCommand").addEventListener("click", async () => navigator.clipboard.writeText(command()));
 el("#startJobButton").addEventListener("click", async () => {
