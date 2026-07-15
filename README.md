@@ -117,6 +117,12 @@ To also insert/update rows in MySQL:
 .\.venv\Scripts\python.exe thriftbooks_scraper.py --write-mysql
 ```
 
+To force a remote MySQL server from the command line:
+
+```powershell
+.\.venv\Scripts\python.exe thriftbooks_scraper.py --write-mysql --mysql-host 192.168.1.254 --mysql-port 3306 --mysql-database scrape_db --mysql-user rakuten_user --mysql-password password123
+```
+
 Linux:
 
 ```bash

@@ -59,10 +59,16 @@ function payload() {
 
 function command() {
   const p = payload();
+  const mysql = state.config.mysql || {};
   return [
     ".\\.venv\\Scripts\\python.exe thriftbooks_scraper.py",
     `--limit ${p.limit}`,
     "--write-mysql",
+    `--mysql-host ${mysql.host || "127.0.0.1"}`,
+    `--mysql-port ${mysql.port || 3306}`,
+    `--mysql-database ${mysql.database || "scrape_db"}`,
+    `--mysql-user ${mysql.user || "scrape_user"}`,
+    "--mysql-password ******",
     `--batch-size ${p.batch_size}`,
     `--requests-per-minute ${p.requests_per_minute}`,
     `--concurrency ${p.concurrency}`,
