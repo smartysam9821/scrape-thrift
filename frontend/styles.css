@@ -1,24 +1,26 @@
+@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
 :root {
-  --bg: #14140f;
-  --panel: #1b1b14;
-  --card: #212119;
-  --card-hover: #303022;
-  --line: #3e3e30;
-  --line-strong: #5b5b42;
-  --ink: #fff8e8;
-  --ink-dim: #d2c9b6;
-  --ink-faint: #9b927f;
-  --green: #8fbf7f;
-  --green-bg: #263421;
-  --amber: #e4a44e;
-  --amber-bg: #2a2115;
-  --red: #bd6157;
-  --red-bg: #2a1a18;
-  --blue: #7a95a8;
+  --bg: #0e1620;
+  --panel: #141f2b;
+  --card: #1a2733;
+  --card-hover: #21313f;
+  --line: #263745;
+  --line-strong: #37495a;
+  --ink: #eae6da;
+  --ink-dim: #b9c4cb;
+  --ink-faint: #7f93a0;
+  --green: #d9a441;
+  --green-bg: #2b2413;
+  --amber: #d9a441;
+  --amber-bg: #2b2413;
+  --red: #c17368;
+  --red-bg: #2a1c19;
+  --blue: #6f9cae;
   --radius: 3px;
-  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --serif: Georgia, "Times New Roman", serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
 }
 
 * { box-sizing: border-box; }
@@ -56,23 +58,23 @@ button {
 }
 
 button:hover {
-  border-color: var(--green);
-  background: #333726;
-  color: #fffdf4;
+  border-color: var(--ink-faint);
+  background: var(--card-hover);
+  color: var(--ink);
 }
 button:active { transform: translateY(1px); }
 
 .primary {
   border-color: var(--green);
   background: var(--green);
-  color: #10140f;
+  color: #1f1708;
   font-weight: 800;
 }
 
 .primary:hover {
-  border-color: #a8d696;
-  background: #a8d696;
-  color: #0a1008;
+  border-color: #f0c35d;
+  background: #f0c35d;
+  color: #1f1708;
 }
 
 .full { width: 100%; justify-content: center; margin-top: 16px; }
@@ -84,7 +86,7 @@ select {
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   padding: 0 10px;
-  background: #181812;
+  background: var(--card);
   color: var(--ink);
 }
 
@@ -215,8 +217,8 @@ h3 {
 
 .nav-item:hover {
   border-left-color: var(--green);
-  background: #28281d;
-  color: #fff8e8;
+  background: var(--card-hover);
+  color: var(--ink);
 }
 
 .nav-item.active {
@@ -245,7 +247,7 @@ h3 {
 .sidebar-footer button:hover {
   border-color: var(--amber);
   background: var(--amber-bg);
-  color: #fff8e8;
+  color: var(--ink);
 }
 
 .online-dot {
@@ -378,7 +380,7 @@ h3 {
   margin-bottom: 14px;
   overflow: hidden;
   border-radius: 999px;
-  background: #11110d;
+  background: #0a1118;
 }
 
 .progress-fill {
@@ -396,8 +398,8 @@ h3 {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 12px;
-  background: #10100c;
-  color: #d8d0bc;
+  background: #0b131b;
+  color: var(--ink);
   font-family: var(--mono);
   font-size: 12px;
   white-space: pre-wrap;
@@ -485,7 +487,7 @@ h3 {
   width: fit-content;
   border-radius: 999px;
   padding: 5px 9px;
-  background: #2a2a20;
+  background: #20313f;
   color: var(--ink-dim);
   font-family: var(--mono);
   font-size: 11px;
