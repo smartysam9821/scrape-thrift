@@ -131,7 +131,44 @@
         </section>
 
         <section class="page" id="settingsPage">
-          <div class="settings-grid" id="configGrid"></div>
+          <div class="settings-grid">
+            <article class="card settings-card">
+              <h3>MySQL connection</h3>
+              <div class="settings-form two-col">
+                <label>Host<input id="configMysqlHost" value="127.0.0.1" /></label>
+                <label>Port<input id="configMysqlPort" value="3306" /></label>
+                <label>Database<input id="configMysqlDatabase" value="scrape_db" /></label>
+                <label>User<input id="configMysqlUser" value="scrape_user" /></label>
+                <label>Password<input type="password" value="scrape_password" /></label>
+              </div>
+              <button type="button">Test connection</button>
+
+              <div class="settings-divider"></div>
+
+              <h3>Admin account</h3>
+              <div class="settings-form two-col">
+                <label>Username<input id="configLoginUser" value="admin" /></label>
+                <label>New password<input type="password" placeholder="Leave blank to keep current" /></label>
+              </div>
+              <button class="primary" type="button">Save account</button>
+            </article>
+
+            <article class="card settings-card">
+              <h3>Default safety controls</h3>
+              <div class="settings-form">
+                <label>Concurrency<input id="configConcurrency" value="3" /></label>
+                <label>Requests per minute<input id="configRpm" value="20" /></label>
+                <div class="two-col">
+                  <label>Min delay (ms)<input value="1000" /></label>
+                  <label>Max delay (ms)<input value="3000" /></label>
+                </div>
+                <label>Stop after consecutive blocks<input value="3" /></label>
+                <label>Rescrape window (hours)<input id="configRescrape" value="12" /></label>
+                <label>Flush batch size<input id="configBatch" value="25" /></label>
+              </div>
+              <button class="primary full" type="button">Save defaults</button>
+            </article>
+          </div>
         </section>
       </main>
     </section>

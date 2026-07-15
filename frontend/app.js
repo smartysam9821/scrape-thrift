@@ -168,22 +168,23 @@ function renderInventory() {
 }
 
 function renderConfig() {
-  const groups = [
-    ["Login", state.config.login],
-    ["MySQL", state.config.mysql],
-    ["Scraper", state.config.scraper],
-  ];
+  const mysql = state.config.mysql || {};
+  const login = state.config.login || {};
+  const scraper = state.config.scraper || {};
+  const setValue = (selector, value) => {
+    const node = el(selector);
+    if (node && value !== undefined) node.value = value;
+  };
 
-el("#configGrid").innerHTML = groups.map(([title, values]) => `
-    <article class="card config-card">
-      <h3>${title}</h3>
-      <dl>
-        ${Object.entries(values || {}).map(([key, value]) => `
-          <div class="config-row"><dt>${key.replaceAll("_", " ")}</dt><dd>${value}</dd></div>
-        `).join("")}
-      </dl>
-    </article>
-  `).join("");
+  setValue("#configMysqlHost", mysql.host);
+  setValue("#configMysqlPort", mysql.port);
+  setValue("#configMysqlDatabase", mysql.database);
+  setValue("#configMysqlUser", mysql.user);
+  setValue("#configLoginUser", login.username);
+  setValue("#configConcurrency", scraper.concurrency);
+  setValue("#configRpm", scraper.requests_per_minute);
+  setValue("#configRescrape", scraper.rescrape_hours);
+  setValue("#configBatch", scraper.batch_size);
 }
 
 function switchPage(name) {
@@ -193,6 +194,7 @@ function switchPage(name) {
   pageTitle.textContent = pages[name].title;
   pageEyebrow.textContent = pages[name].eyebrow;
   pageDescription.textContent = pages[name].description;
+  document.querySelector(".head-actions").classList.toggle("hidden", name === "settings");
 }
 
 function setAuthed(authed) {
