@@ -291,7 +291,11 @@ loginForm.addEventListener("submit", async (event) => {
   }
 });
 
-el("#refreshButton").addEventListener("click", refresh);
+el("#logoutButton").addEventListener("click", () => {
+  localStorage.removeItem("scrapeLedgerAuthed");
+  setAuthed(false);
+  loginForm.reset();
+});
 el("#copyCommand").addEventListener("click", async () => navigator.clipboard.writeText(command()));
 el("#startJobButton").addEventListener("click", async () => {
   const button = el("#startJobButton");

@@ -238,10 +238,15 @@ h3 {
   font-size: 12px;
 }
 
+.sidebar-footer span:nth-child(2) {
+  min-width: 0;
+}
+
 .sidebar-footer button {
   margin-left: auto;
   min-height: 30px;
   padding-inline: 10px;
+  color: var(--ink);
 }
 
 .sidebar-footer button:hover {
