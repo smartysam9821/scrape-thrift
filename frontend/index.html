@@ -73,7 +73,7 @@
               <div class="breakdown">
                 <div><span>In stock</span><strong id="stockInLabel">0%</strong><i style="width:72%"></i></div>
                 <div><span>Out of stock</span><strong id="stockOutLabel">0%</strong><i class="red" style="width:21%"></i></div>
-                <div><span>Unlisted / removed</span><strong id="stockUnknownLabel">0%</strong><i class="muted" style="width:7%"></i></div>
+                <div><span>Not found / unavailable</span><strong id="stockUnknownLabel">0%</strong><i class="muted" style="width:7%"></i></div>
               </div>
               <div class="section-label">Recently flagged</div>
               <div class="mini-table" id="recentInventory"></div>
@@ -105,7 +105,10 @@
               <div class="progress-meta"><span id="jobProgressCount">No active job</span><span id="jobProgressMeta">concurrency 3 · 20 req/min</span></div>
               <button class="danger full hidden" id="stopJobButton" type="button">Stop job</button>
               <div class="section-label">History</div>
-              <table class="ledger compact"><tbody><tr><td>#214</td><td>10:02 AM</td><td>1,000</td><td><span class="tag">complete</span></td></tr><tr><td>#213</td><td>Yesterday</td><td>980</td><td><span class="tag blocked">stopped</span></td></tr></tbody></table>
+              <table class="ledger compact">
+                <thead><tr><th>Job</th><th>Started</th><th>Processed</th><th>Status</th></tr></thead>
+                <tbody id="jobHistoryBody"></tbody>
+              </table>
               <div class="card-head command-head"><h3>Command</h3><button type="button" id="copyCommand">Copy</button></div>
               <pre class="command" id="commandPreview"></pre>
             </article>
@@ -139,7 +142,7 @@
                 <label>Port<input id="configMysqlPort" value="3306" /></label>
                 <label>Database<input id="configMysqlDatabase" value="scrape_db" /></label>
                 <label>User<input id="configMysqlUser" value="scrape_user" /></label>
-                <label>Password<input type="password" value="scrape_password" /></label>
+                <label>Password<input id="configMysqlPassword" type="password" value="scrape_password" /></label>
               </div>
               <button type="button">Test connection</button>
 
@@ -148,9 +151,9 @@
               <h3>Admin account</h3>
               <div class="settings-form two-col">
                 <label>Username<input id="configLoginUser" value="admin" /></label>
-                <label>New password<input type="password" placeholder="Leave blank to keep current" /></label>
+                <label>New password<input id="configLoginPassword" type="password" placeholder="Leave blank to keep current" /></label>
               </div>
-              <button class="primary" type="button">Save account</button>
+              <button class="primary" id="saveAccountButton" type="button">Save account</button>
             </article>
 
             <article class="card settings-card">
@@ -166,7 +169,7 @@
                 <label>Rescrape window (hours)<input id="configRescrape" value="12" /></label>
                 <label>Flush batch size<input id="configBatch" value="25" /></label>
               </div>
-              <button class="primary full" type="button">Save defaults</button>
+              <button class="primary full" id="saveDefaultsButton" type="button">Save defaults</button>
             </article>
           </div>
         </section>

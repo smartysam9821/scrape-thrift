@@ -7,3 +7,5 @@ isbn/*
 !isbn/.gitkeep
 __pycache__/
 *.pyc
+config.json
+ui_state.db

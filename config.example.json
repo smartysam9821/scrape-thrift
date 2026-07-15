@@ -1,0 +1,22 @@
+{
+  "login": {
+    "username": "admin",
+    "password": "scrape123"
+  },
+  "mysql": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "database": "scrape_db",
+    "user": "scrape_user",
+    "password": "scrape_password",
+    "table": "thriftbooks_inv"
+  },
+  "scraper": {
+    "batch_size": 25,
+    "requests_per_minute": 20,
+    "concurrency": 3,
+    "rescrape_hours": 12,
+    "input_dir": "isbn/",
+    "output_dir": "results/"
+  }
+}

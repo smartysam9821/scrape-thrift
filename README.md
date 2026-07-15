@@ -42,16 +42,31 @@ Create Python virtual environment and install dependencies:
 
 ```powershell
 py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m playwright install chromium
+copy config.example.json config.json
 ```
 
 On Linux:
 
 ```bash
 python3.12 -m venv .venv
+./.venv/bin/python -m pip install --upgrade pip
 ./.venv/bin/python -m pip install -r requirements.txt
 ./.venv/bin/python -m playwright install chromium
+cp config.example.json config.json
+```
+
+Edit `config.json` on each server before running jobs. This file stores local login, MySQL, and scraper defaults. It is ignored by git because it can contain passwords.
+
+Runtime data that should stay local:
+
+```text
+config.json        local settings and credentials
+ui_state.db        web console UI state, including job history
+results/           scraper logs, CSV, and JSONL output
+isbn/              input text files
 ```
 
 ## MySQL
@@ -126,6 +141,12 @@ Start the FastAPI web console:
 .\.venv\Scripts\python.exe -m uvicorn app:app --host 127.0.0.1 --port 8000
 ```
 
+For access from another machine on the network:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
 Open:
 
 ```text
@@ -140,6 +161,10 @@ password: scrape123
 ```
 
 The frontend uses plain HTML, CSS, and JavaScript from `frontend/`. FastAPI serves the page and exposes small APIs for login, summary, progress, job status, and starting one scrape job.
+
+The web console persists UI-related state in `ui_state.db`. Job history survives FastAPI restarts.
+
+On Windows, start FastAPI from a normal PowerShell or service account session. If it is launched from a restricted/sandboxed session, Playwright can fail with `PermissionError: [WinError 5] Access is denied` when it tries to start its browser driver.
 
 Useful options:
 

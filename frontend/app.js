@@ -99,14 +99,15 @@ async function refresh() {
   el("#inventoryRowCount").textContent = Number(summary.result_count || 0).toLocaleString();
   el("#progressTag").textContent = summary.job_running ? "running" : "ready";
   el("#progressTag").className = `tag ${summary.job_running ? "in-stock" : ""}`;
+  const job = summary.job || {};
   el("#jobStatusTag").textContent = summary.job_running ? "running" : "idle";
   el("#jobStatusTag").className = `tag ${summary.job_running ? "in-stock" : ""}`;
-  el("#jobProgressFill").style.width = summary.job_running ? "64%" : "0";
+  el("#jobProgressFill").style.width = summary.job_running ? `${Math.min(job.percent || 0, 100)}%` : "0";
   el("#jobProgressCount").textContent = summary.job_running
-    ? `${Number(summary.result_count || 0).toLocaleString()} scraped`
+    ? `${Number(job.processed || 0).toLocaleString()} / ${Number(job.limit || payload().limit).toLocaleString()} ISBNs`
     : "No active job";
   el("#jobProgressMeta").textContent = summary.job_running
-    ? `concurrency ${payload().concurrency} · ${payload().requests_per_minute} req/min`
+    ? `concurrency ${job.concurrency || payload().concurrency} - ${job.requests_per_minute || payload().requests_per_minute} req/min`
     : "ready to start";
   el("#stopJobButton").classList.toggle("hidden", !summary.job_running);
   el("#progressLog").textContent = progress.lines.length ? progress.lines.join("\n") : "No progress yet.";
@@ -115,6 +116,8 @@ async function refresh() {
   renderRecentInventory();
   renderInventory();
   renderConfig();
+  applyConfigToJobForm();
+  await renderJobHistory();
 }
 
 function renderRecentInventory() {
@@ -142,7 +145,10 @@ function renderStockStats() {
   el("#stockInLabel").textContent = pct(inStock);
   el("#stockOutLabel").textContent = pct(outStock);
   el("#stockUnknownLabel").textContent = pct(unknown);
-  el("#progressCount").textContent = `${Number(state.summary.result_count || 0).toLocaleString()} / ${Number(state.summary.isbn_count || 0).toLocaleString()} ISBNs`;
+  const job = state.summary.job || {};
+  el("#progressCount").textContent = state.summary.job_running
+    ? `${Number(job.processed || 0).toLocaleString()} / ${Number(job.limit || payload().limit).toLocaleString()} ISBNs`
+    : "No active job";
 }
 
 function renderInventory() {
@@ -180,11 +186,76 @@ function renderConfig() {
   setValue("#configMysqlPort", mysql.port);
   setValue("#configMysqlDatabase", mysql.database);
   setValue("#configMysqlUser", mysql.user);
+  setValue("#configMysqlPassword", mysql.password);
   setValue("#configLoginUser", login.username);
   setValue("#configConcurrency", scraper.concurrency);
   setValue("#configRpm", scraper.requests_per_minute);
   setValue("#configRescrape", scraper.rescrape_hours);
   setValue("#configBatch", scraper.batch_size);
+}
+
+async function renderJobHistory() {
+  const data = await api("/api/jobs/history");
+  const rows = data.jobs || [];
+  el("#jobHistoryBody").innerHTML = rows.length
+    ? rows.map((job) => `
+      <tr>
+        <td>#${job.id}</td>
+        <td>${formatStarted(job.started_at)}</td>
+        <td>${Number(job.processed || 0).toLocaleString()} / ${Number(job.limit || 0).toLocaleString()}</td>
+        <td><span class="tag ${job.status === "failed" ? "blocked" : ""}">${job.status}</span></td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="4">No completed jobs yet.</td></tr>`;
+}
+
+function formatStarted(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString([], { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+function configPayload({ includeAccount = false } = {}) {
+  const body = {
+    mysql: {
+      host: el("#configMysqlHost").value,
+      port: Number(el("#configMysqlPort").value || 3306),
+      database: el("#configMysqlDatabase").value,
+      user: el("#configMysqlUser").value,
+      password: el("#configMysqlPassword").value,
+    },
+    scraper: {
+      concurrency: Number(el("#configConcurrency").value || 3),
+      requests_per_minute: Number(el("#configRpm").value || 20),
+      rescrape_hours: Number(el("#configRescrape").value || 12),
+      batch_size: Number(el("#configBatch").value || 25),
+    },
+  };
+  if (includeAccount) {
+    body.login = {
+      username: el("#configLoginUser").value,
+      password: el("#configLoginPassword").value,
+    };
+  }
+  return body;
+}
+
+function applySettingsToJobForm() {
+  inputs.concurrency.value = el("#configConcurrency").value || inputs.concurrency.value;
+  inputs.rpm.value = el("#configRpm").value || inputs.rpm.value;
+  inputs.freshness.value = el("#configRescrape").value || inputs.freshness.value;
+  inputs.batch.value = el("#configBatch").value || inputs.batch.value;
+  renderCommand();
+}
+
+function applyConfigToJobForm() {
+  const scraper = state.config.scraper || {};
+  if (scraper.concurrency !== undefined) inputs.concurrency.value = scraper.concurrency;
+  if (scraper.requests_per_minute !== undefined) inputs.rpm.value = scraper.requests_per_minute;
+  if (scraper.rescrape_hours !== undefined) inputs.freshness.value = scraper.rescrape_hours;
+  if (scraper.batch_size !== undefined) inputs.batch.value = scraper.batch_size;
+  renderCommand();
 }
 
 function switchPage(name) {
@@ -237,6 +308,23 @@ el("#startJobButton").addEventListener("click", async () => {
     button.textContent = "Job already running";
   }
   setTimeout(() => { button.textContent = "Start job"; }, 1600);
+});
+
+el("#saveDefaultsButton").addEventListener("click", async () => {
+  await api("/api/config", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(configPayload()),
+  });
+  applySettingsToJobForm();
+});
+
+el("#saveAccountButton").addEventListener("click", async () => {
+  await api("/api/config", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(configPayload({ includeAccount: true })),
+  });
 });
 
 document.querySelectorAll(".nav-item").forEach((button) => {
