@@ -139,38 +139,6 @@ MySQL connection values are read from `config.json` when jobs are started from t
 --mysql-password
 ```
 
-## Export Existing Results To MySQL
-
-To upload the current CSV output to the MySQL database configured in `config.json`:
-
-```powershell
-.\.venv\Scripts\python.exe export_results_to_mysql.py
-```
-
-Linux:
-
-```bash
-./.venv/bin/python export_results_to_mysql.py
-```
-
-By default this reads:
-
-```text
-results/thriftbooks_results.csv
-```
-
-and creates/updates:
-
-```text
-thriftbooks_inv
-```
-
-To export a specific CSV:
-
-```powershell
-.\.venv\Scripts\python.exe export_results_to_mysql.py --csv results\thriftbooks_results.csv
-```
-
 ## Web Console
 
 Start the FastAPI web console:
