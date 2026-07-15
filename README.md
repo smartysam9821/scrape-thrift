@@ -118,6 +118,29 @@ user: scrape_user
 password: scrape_password
 ```
 
+## Web Console
+
+Start the FastAPI web console:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app:app --host 127.0.0.1 --port 8000
+```
+
+Open:
+
+```text
+http://127.0.0.1:8000
+```
+
+Login:
+
+```text
+username: admin
+password: scrape123
+```
+
+The frontend uses plain HTML, CSS, and JavaScript from `frontend/`. FastAPI serves the page and exposes small APIs for login, summary, progress, job status, and starting one scrape job.
+
 Useful options:
 
 ```powershell
