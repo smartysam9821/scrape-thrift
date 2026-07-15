@@ -2,15 +2,15 @@
   --bg: #14140f;
   --panel: #1b1b14;
   --card: #212119;
-  --card-hover: #272719;
-  --line: #35352a;
-  --line-strong: #46462f;
-  --ink: #ece7d9;
-  --ink-dim: #a9a290;
-  --ink-faint: #746e5d;
-  --green: #6b8a63;
-  --green-bg: #212a1e;
-  --amber: #c98a3e;
+  --card-hover: #303022;
+  --line: #3e3e30;
+  --line-strong: #5b5b42;
+  --ink: #fff8e8;
+  --ink-dim: #d2c9b6;
+  --ink-faint: #9b927f;
+  --green: #8fbf7f;
+  --green-bg: #263421;
+  --amber: #e4a44e;
   --amber-bg: #2a2115;
   --red: #bd6157;
   --red-bg: #2a1a18;
@@ -52,16 +52,27 @@ button {
   background: var(--card);
   color: var(--ink);
   cursor: pointer;
+  font-weight: 600;
 }
 
-button:hover { background: var(--card-hover); }
+button:hover {
+  border-color: var(--green);
+  background: #333726;
+  color: #fffdf4;
+}
 button:active { transform: translateY(1px); }
 
 .primary {
   border-color: var(--green);
   background: var(--green);
   color: #10140f;
-  font-weight: 700;
+  font-weight: 800;
+}
+
+.primary:hover {
+  border-color: #a8d696;
+  background: #a8d696;
+  color: #0a1008;
 }
 
 .full { width: 100%; justify-content: center; margin-top: 16px; }
@@ -198,8 +209,14 @@ h3 {
   min-height: 38px;
   border-color: transparent;
   border-left: 2px solid transparent;
-  color: var(--ink-dim);
+  color: #d8d0bc;
   text-align: left;
+}
+
+.nav-item:hover {
+  border-left-color: var(--green);
+  background: #28281d;
+  color: #fff8e8;
 }
 
 .nav-item.active {
@@ -223,6 +240,12 @@ h3 {
   margin-left: auto;
   min-height: 30px;
   padding-inline: 10px;
+}
+
+.sidebar-footer button:hover {
+  border-color: var(--amber);
+  background: var(--amber-bg);
+  color: #fff8e8;
 }
 
 .online-dot {
@@ -436,6 +459,10 @@ h3 {
 }
 
 .ledger tbody tr:hover { background: var(--card-hover); }
+
+.ledger tbody tr:hover td {
+  color: var(--ink);
+}
 
 .source-grid,
 .config-grid {
