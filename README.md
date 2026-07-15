@@ -166,6 +166,47 @@ The web console persists UI-related state in `ui_state.db`. Job history survives
 
 On Windows, start FastAPI from a normal PowerShell or service account session. If it is launched from a restricted/sandboxed session, Playwright can fail with `PermissionError: [WinError 5] Access is denied` when it tries to start its browser driver.
 
+## Services
+
+Service templates are in `deploy/`.
+
+Linux systemd:
+
+```bash
+sudo useradd --system --create-home --shell /usr/sbin/nologin scrape
+sudo mkdir -p /opt/scrape-thrift
+sudo cp -R . /opt/scrape-thrift
+sudo chown -R scrape:scrape /opt/scrape-thrift
+sudo cp deploy/thriftbooks-console.service /etc/systemd/system/thriftbooks-console.service
+sudo systemctl daemon-reload
+sudo systemctl enable thriftbooks-console
+sudo systemctl start thriftbooks-console
+sudo systemctl status thriftbooks-console
+```
+
+Edit `deploy/thriftbooks-console.service` first if your project path, user, host, or port is different.
+
+Windows service:
+
+Install NSSM, then run PowerShell as Administrator:
+
+```powershell
+.\deploy\install-windows-service.ps1 -ProjectDir "C:\scrape-thrift" -Port 8000
+```
+
+If `nssm.exe` is not in `PATH`:
+
+```powershell
+.\deploy\install-windows-service.ps1 -ProjectDir "C:\scrape-thrift" -NssmPath "C:\tools\nssm\nssm.exe"
+```
+
+Logs:
+
+```text
+results/windows-service.out.log
+results/windows-service.err.log
+```
+
 Useful options:
 
 ```powershell

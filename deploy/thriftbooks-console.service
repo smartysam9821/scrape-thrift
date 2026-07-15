@@ -1,0 +1,17 @@
+[Unit]
+Description=ThriftBooks Scraper Web Console
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=scrape
+Group=scrape
+WorkingDirectory=/opt/scrape-thrift
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/scrape-thrift/.venv/bin/python -m uvicorn app:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
