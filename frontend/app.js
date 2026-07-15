@@ -100,6 +100,15 @@ async function refresh() {
   el("#progressTag").textContent = summary.job_running ? "running" : "ready";
   el("#progressTag").className = `tag ${summary.job_running ? "in-stock" : ""}`;
   el("#jobStatusTag").textContent = summary.job_running ? "running" : "idle";
+  el("#jobStatusTag").className = `tag ${summary.job_running ? "in-stock" : ""}`;
+  el("#jobProgressFill").style.width = summary.job_running ? "64%" : "0";
+  el("#jobProgressCount").textContent = summary.job_running
+    ? `${Number(summary.result_count || 0).toLocaleString()} scraped`
+    : "No active job";
+  el("#jobProgressMeta").textContent = summary.job_running
+    ? `concurrency ${payload().concurrency} · ${payload().requests_per_minute} req/min`
+    : "ready to start";
+  el("#stopJobButton").classList.toggle("hidden", !summary.job_running);
   el("#progressLog").textContent = progress.lines.length ? progress.lines.join("\n") : "No progress yet.";
 
   renderStockStats();

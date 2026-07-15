@@ -101,9 +101,9 @@
             </article>
             <article class="card">
               <div class="card-head"><h3>Running now</h3><span class="tag" id="jobStatusTag">idle</span></div>
-              <div class="progress-track"><div class="progress-fill" style="width:64%"></div></div>
-              <div class="progress-meta"><span>642 / 1,000 ISBNs</span><span>concurrency 3 · 20 req/min</span></div>
-              <button class="danger full" type="button">Stop job</button>
+              <div class="progress-track"><div class="progress-fill" id="jobProgressFill"></div></div>
+              <div class="progress-meta"><span id="jobProgressCount">No active job</span><span id="jobProgressMeta">concurrency 3 · 20 req/min</span></div>
+              <button class="danger full hidden" id="stopJobButton" type="button">Stop job</button>
               <div class="section-label">History</div>
               <table class="ledger compact"><tbody><tr><td>#214</td><td>10:02 AM</td><td>1,000</td><td><span class="tag">complete</span></td></tr><tr><td>#213</td><td>Yesterday</td><td>980</td><td><span class="tag blocked">stopped</span></td></tr></tbody></table>
               <div class="card-head command-head"><h3>Command</h3><button type="button" id="copyCommand">Copy</button></div>
