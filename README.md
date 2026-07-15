@@ -77,8 +77,8 @@ Start MySQL 8.0 with Docker:
 docker run --name scrape-mysql `
   -e MYSQL_ROOT_PASSWORD=scrape_root_password `
   -e MYSQL_DATABASE=scrape_db `
-  -e MYSQL_USER=scrape_user `
-  -e MYSQL_PASSWORD=scrape_password `
+  -e MYSQL_USER=change_me_user `
+  -e MYSQL_PASSWORD=change_me_password `
   -p 3306:3306 `
   -d mysql:8.0
 ```
@@ -89,8 +89,8 @@ On Linux/macOS:
 docker run --name scrape-mysql \
   -e MYSQL_ROOT_PASSWORD=scrape_root_password \
   -e MYSQL_DATABASE=scrape_db \
-  -e MYSQL_USER=scrape_user \
-  -e MYSQL_PASSWORD=scrape_password \
+  -e MYSQL_USER=change_me_user \
+  -e MYSQL_PASSWORD=change_me_password \
   -p 3306:3306 \
   -d mysql:8.0
 ```
@@ -120,7 +120,7 @@ To also insert/update rows in MySQL:
 To force a remote MySQL server from the command line:
 
 ```powershell
-.\.venv\Scripts\python.exe thriftbooks_scraper.py --write-mysql --mysql-host 192.168.1.254 --mysql-port 3306 --mysql-database scrape_db --mysql-user rakuten_user --mysql-password password123
+.\.venv\Scripts\python.exe thriftbooks_scraper.py --write-mysql --mysql-host MYSQL_HOST --mysql-port 3306 --mysql-database MYSQL_DATABASE --mysql-user MYSQL_USER --mysql-password MYSQL_PASSWORD
 ```
 
 Linux:
@@ -129,14 +129,14 @@ Linux:
 ./.venv/bin/python thriftbooks_scraper.py --write-mysql
 ```
 
-Default MySQL connection:
+MySQL connection values are read from `config.json` when jobs are started from the web console. Command-line scraper runs can override them with:
 
 ```text
-host: 127.0.0.1
-port: 3306
-database: scrape_db
-user: scrape_user
-password: scrape_password
+--mysql-host
+--mysql-port
+--mysql-database
+--mysql-user
+--mysql-password
 ```
 
 ## Web Console
@@ -159,12 +159,7 @@ Open:
 http://127.0.0.1:8000
 ```
 
-Login:
-
-```text
-username: admin
-password: scrape123
-```
+Login username and password are read from `config.json`.
 
 The frontend uses plain HTML, CSS, and JavaScript from `frontend/`. FastAPI serves the page and exposes small APIs for login, summary, progress, job status, and starting one scrape job.
 

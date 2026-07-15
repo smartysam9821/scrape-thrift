@@ -1,14 +1,14 @@
 {
   "login": {
-    "username": "admin",
-    "password": "scrape123"
+    "username": "CHANGE_ME_ADMIN_USER",
+    "password": "CHANGE_ME_ADMIN_PASSWORD"
   },
   "mysql": {
-    "host": "127.0.0.1",
+    "host": "CHANGE_ME_MYSQL_HOST",
     "port": 3306,
-    "database": "scrape_db",
-    "user": "scrape_user",
-    "password": "scrape_password",
+    "database": "CHANGE_ME_MYSQL_DATABASE",
+    "user": "CHANGE_ME_MYSQL_USER",
+    "password": "CHANGE_ME_MYSQL_PASSWORD",
     "table": "thriftbooks_inv"
   },
   "scraper": {

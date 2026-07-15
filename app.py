@@ -26,16 +26,14 @@ UI_DB_PATH = ROOT / "ui_state.db"
 app = FastAPI(title="Scrape Console")
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
-active_job: subprocess.Popen[str] | None = None
-active_job_meta: dict[str, Any] = {}
-app_config: dict[str, Any] = {
-    "login": {"username": "admin", "password": "scrape123"},
+DEFAULT_CONFIG: dict[str, Any] = {
+    "login": {"username": "", "password": ""},
     "mysql": {
-        "host": "127.0.0.1",
+        "host": "",
         "port": 3306,
-        "database": "scrape_db",
-        "user": "scrape_user",
-        "password": "scrape_password",
+        "database": "",
+        "user": "",
+        "password": "",
         "table": "thriftbooks_inv",
     },
     "scraper": {
@@ -48,14 +46,48 @@ app_config: dict[str, Any] = {
     },
 }
 
-if CONFIG_PATH.exists():
+active_job: subprocess.Popen[str] | None = None
+active_job_meta: dict[str, Any] = {}
+
+
+def load_app_config() -> dict[str, Any]:
+    if not CONFIG_PATH.exists():
+        raise RuntimeError("Missing config.json. Copy config.example.json to config.json and update it.")
+
     try:
         saved_config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
-        saved_config = {}
+        raise RuntimeError("config.json is not valid JSON.") from None
+
+    config = json.loads(json.dumps(DEFAULT_CONFIG))
     for section, values in saved_config.items():
-        if isinstance(values, dict) and section in app_config:
-            app_config[section].update(values)
+        if isinstance(values, dict) and section in config:
+            config[section].update(values)
+
+    missing = [
+        "login.username",
+        "login.password",
+        "mysql.host",
+        "mysql.database",
+        "mysql.user",
+        "mysql.password",
+    ]
+    missing = [key for key in missing if not nested_config_value(config, key)]
+    if missing:
+        raise RuntimeError(f"Missing required config.json values: {', '.join(missing)}")
+    return config
+
+
+def nested_config_value(config: dict[str, Any], dotted_key: str) -> Any:
+    current: Any = config
+    for part in dotted_key.split("."):
+        if not isinstance(current, dict):
+            return None
+        current = current.get(part)
+    return current
+
+
+app_config = load_app_config()
 
 
 
