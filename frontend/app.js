@@ -1,3 +1,5 @@
+console.log("🚀 app.js loaded successfully");
+
 const state = {
   inventory: [],
   summary: {},
@@ -40,6 +42,8 @@ const pageDescription = el("#pageDescription");
 const commandPreview = el("#commandPreview");
 
 const inputs = {
+  scraper: el("#scraperSelect"),
+  source: el("#sourceSelect"),
   limit: el("#limitInput"),
   rpm: el("#rpmInput"),
   concurrency: el("#concurrencyInput"),
@@ -48,7 +52,10 @@ const inputs = {
 };
 
 function payload() {
+  const scraper = inputs.scraper.value || "thriftbooks";
   return {
+    scraper: scraper,
+    urls_file: scraper === "hamelyn" ? (inputs.source.value || "urls.txt") : "",
     limit: Number(inputs.limit.value || 780),
     requests_per_minute: Number(inputs.rpm.value || 20),
     concurrency: Number(inputs.concurrency.value || 3),
@@ -60,26 +67,57 @@ function payload() {
 function command() {
   const p = payload();
   const mysql = state.config.mysql || {};
-  return [
-    ".\\.venv\\Scripts\\python.exe thriftbooks_scraper.py",
-    `--limit ${p.limit}`,
-    "--write-mysql",
-    `--mysql-host ${mysql.host || "<mysql-host>"}`,
-    `--mysql-port ${mysql.port || 3306}`,
-    `--mysql-database ${mysql.database || "<mysql-database>"}`,
-    `--mysql-user ${mysql.user || "<mysql-user>"}`,
-    "--mysql-password ******",
-    `--batch-size ${p.batch_size}`,
-    `--requests-per-minute ${p.requests_per_minute}`,
-    `--concurrency ${p.concurrency}`,
-    "--min-delay-ms 1000",
-    "--max-delay-ms 3000",
-    `--rescrape-hours ${p.rescrape_hours}`,
-  ].join(" ");
+  
+  if (p.scraper === "hamelyn") {
+    return [
+      ".\\.venv\\Scripts\\python.exe scrape_hamelyn.py",
+      `--urls-file ${p.urls_file || "urls.txt"}`,
+      `--mysql-host ${mysql.host || "<mysql-host>"}`,
+      `--mysql-port ${mysql.port || 3306}`,
+      `--mysql-user ${mysql.user || "<mysql-user>"}`,
+      "--mysql-password ******",
+      `--mysql-db ${mysql.database || "<mysql-database>"}`,
+      `--rpm ${p.requests_per_minute}`,
+    ].join(" ");
+  } else {
+    return [
+      ".\\.venv\\Scripts\\python.exe thriftbooks_scraper.py",
+      `--limit ${p.limit}`,
+      "--write-mysql",
+      `--mysql-host ${mysql.host || "<mysql-host>"}`,
+      `--mysql-port ${mysql.port || 3306}`,
+      `--mysql-database ${mysql.database || "<mysql-database>"}`,
+      `--mysql-user ${mysql.user || "<mysql-user>"}`,
+      "--mysql-password ******",
+      `--batch-size ${p.batch_size}`,
+      `--requests-per-minute ${p.requests_per_minute}`,
+      `--concurrency ${p.concurrency}`,
+      "--min-delay-ms 1000",
+      "--max-delay-ms 3000",
+      `--rescrape-hours ${p.rescrape_hours}`,
+    ].join(" ");
+  }
 }
 
 function renderCommand() {
   commandPreview.textContent = command();
+}
+
+function updateSourcesDropdown() {
+  const scraper = inputs.scraper.value || "thriftbooks";
+  const sources = state.sources || {};
+  const scraperSources = sources[scraper] || [];
+  
+  // Show/hide limit input based on scraper
+  const limitLabel = document.querySelector('label:has(#limitInput)');
+  if (limitLabel) limitLabel.style.display = scraper === "thriftbooks" ? "" : "none";
+  
+  // Update source dropdown
+  inputs.source.innerHTML = scraperSources.map(source => 
+    `<option value="${source.file}">${source.name}</option>`
+  ).join("");
+  
+  renderCommand();
 }
 
 async function api(path, options) {
@@ -89,16 +127,21 @@ async function api(path, options) {
 }
 
 async function refresh() {
-  const [summary, progress, inventory, config] = await Promise.all([
+  const [summary, progress, inventory, config, sources] = await Promise.all([
     api("/api/summary"),
     api("/api/progress?limit=20"),
     api("/api/inventory?limit=100"),
     api("/api/config"),
+    api("/api/sources"),
   ]);
 
   state.summary = summary;
   state.inventory = inventory.rows || [];
   state.config = config;
+  state.sources = sources;
+
+  // Update sources dropdown based on current scraper
+  updateSourcesDropdown();
 
   el("#isbnCount").textContent = Number(summary.isbn_count || 0).toLocaleString();
   el("#resultCount").textContent = Number(summary.result_count || 0).toLocaleString();
@@ -106,11 +149,12 @@ async function refresh() {
   el("#progressTag").textContent = summary.job_running ? "running" : "ready";
   el("#progressTag").className = `tag ${summary.job_running ? "in-stock" : ""}`;
   const job = summary.job || {};
+  const unitLabel = job.scraper === "hamelyn" ? "URLs" : "ISBNs";
   el("#jobStatusTag").textContent = summary.job_running ? "running" : "idle";
   el("#jobStatusTag").className = `tag ${summary.job_running ? "in-stock" : ""}`;
   el("#jobProgressFill").style.width = summary.job_running ? `${Math.min(job.percent || 0, 100)}%` : "0";
   el("#jobProgressCount").textContent = summary.job_running
-    ? `${Number(job.processed || 0).toLocaleString()} / ${Number(job.limit || payload().limit).toLocaleString()} ISBNs`
+    ? `${Number(job.processed || 0).toLocaleString()} / ${Number(job.limit || payload().limit).toLocaleString()} ${unitLabel}`
     : "No active job";
   el("#jobProgressMeta").textContent = summary.job_running
     ? `concurrency ${job.concurrency || payload().concurrency} - ${job.requests_per_minute || payload().requests_per_minute} req/min`
@@ -152,8 +196,9 @@ function renderStockStats() {
   el("#stockOutLabel").textContent = pct(outStock);
   el("#stockUnknownLabel").textContent = pct(unknown);
   const job = state.summary.job || {};
+  const unitLabel = job.scraper === "hamelyn" ? "URLs" : "ISBNs";
   el("#progressCount").textContent = state.summary.job_running
-    ? `${Number(job.processed || 0).toLocaleString()} / ${Number(job.limit || payload().limit).toLocaleString()} ISBNs`
+    ? `${Number(job.processed || 0).toLocaleString()} / ${Number(job.limit || payload().limit).toLocaleString()} ${unitLabel}`
     : "No active job";
 }
 
@@ -345,7 +390,10 @@ document.querySelectorAll("[data-jump]").forEach((button) => {
   button.addEventListener("click", () => switchPage(button.dataset.jump));
 });
 
-Object.values(inputs).forEach((input) => input.addEventListener("input", renderCommand));
+Object.values(inputs).forEach((input) => {
+  if (input) input.addEventListener("input", renderCommand);
+});
+if (inputs.scraper) inputs.scraper.addEventListener("change", updateSourcesDropdown);
 el("#inventorySearch").addEventListener("input", renderInventory);
 el("#stockFilter").addEventListener("change", renderInventory);
 

@@ -85,7 +85,8 @@
           <div class="layout-two jobs-layout">
             <article class="card">
               <div class="card-head"><h3>New job</h3></div>
-              <label>ISBN source file<select><option>IM_Active_ISBN.txt</option></select></label>
+              <label>Scraper<select id="scraperSelect"><option value="thriftbooks">ThriftBooks</option><option value="hamelyn">Hamelyn</option></select></label>
+              <label>Source file<select id="sourceSelect"><option>IM_Active_ISBN.txt</option></select></label>
               <small class="hint">Drop new .txt files below, or upload one now.</small>
               <label>Upload a new file<div class="drop-zone">Drag a .txt file here, or browse</div></label>
               <form class="job-form" id="jobForm">
@@ -176,6 +177,6 @@
       </main>
     </section>
 
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=2"></script>
   </body>
 </html>

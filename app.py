@@ -13,6 +13,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from rich.console import Console
 
 
 ROOT = Path(__file__).resolve().parent
@@ -22,6 +23,8 @@ ISBN_DIR = ROOT / "isbn"
 PYTHON = ROOT / ".venv" / "Scripts" / "python.exe"
 CONFIG_PATH = ROOT / "config.json"
 UI_DB_PATH = ROOT / "ui_state.db"
+
+console = Console()
 
 app = FastAPI(title="Scrape Console")
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
@@ -97,11 +100,13 @@ class LoginRequest(BaseModel):
 
 
 class JobRequest(BaseModel):
+    scraper: str = Field(default="thriftbooks", description="Which scraper to run: thriftbooks or hamelyn")
     limit: int = Field(default=780, ge=1, le=100_000)
     requests_per_minute: int = Field(default=20, ge=1, le=60)
     concurrency: int = Field(default=3, ge=1, le=5)
     batch_size: int = Field(default=25, ge=1, le=500)
     rescrape_hours: int = Field(default=12, ge=0, le=720)
+    urls_file: str = Field(default="", description="For Hamelyn: urls.txt or custom file")
 
 
 class ConfigRequest(BaseModel):
@@ -147,6 +152,30 @@ def progress(limit: int = 20) -> dict[str, list[str]]:
     return {"lines": read_tail(progress_log, limit)}
 
 
+@app.get("/api/sources")
+def get_sources() -> dict[str, Any]:
+    """Get available sources for each scraper"""
+    sources = {
+        "thriftbooks": [
+            {"name": "ISBN List", "file": "isbn/IM_Active_ISBN.txt"}
+        ],
+        "hamelyn": []
+    }
+    
+    # Read from urls.txt
+    urls_file = ROOT / "urls.txt"
+    if urls_file.exists():
+        try:
+            urls = [url.strip() for url in urls_file.read_text().splitlines() if url.strip() and not url.startswith('[') and not url.startswith('=')]
+            sources["hamelyn"] = [
+                {"name": f"urls.txt ({len(urls)} URLs)", "file": "urls.txt"}
+            ]
+        except Exception as e:
+            console.print(f"[yellow]⚠[/yellow] Error reading urls.txt: {e}")
+    
+    return sources
+
+
 @app.get("/api/inventory")
 def inventory(limit: int = 100) -> dict[str, Any]:
     result_csv = RESULTS_DIR / "thriftbooks_results.csv"
@@ -190,49 +219,67 @@ def start_job(payload: JobRequest) -> dict[str, Any]:
     if is_job_running():
         raise HTTPException(status_code=409, detail="A scrape job is already running")
 
-    payload = JobRequest(
-        limit=payload.limit,
-        requests_per_minute=payload.requests_per_minute,
-        concurrency=payload.concurrency,
-        batch_size=payload.batch_size,
-        rescrape_hours=payload.rescrape_hours,
-    )
-
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     out_log = RESULTS_DIR / "frontend_job.out.log"
     err_log = RESULTS_DIR / "frontend_job.err.log"
     progress_log = RESULTS_DIR / "progress.log"
     progress_log.unlink(missing_ok=True)
 
-    command = [
-        str(PYTHON if PYTHON.exists() else Path(sys.executable)),
-        "thriftbooks_scraper.py",
-        "--limit",
-        str(payload.limit),
-        "--write-mysql",
-        "--mysql-host",
-        str(app_config["mysql"]["host"]),
-        "--mysql-port",
-        str(app_config["mysql"]["port"]),
-        "--mysql-database",
-        str(app_config["mysql"]["database"]),
-        "--mysql-user",
-        str(app_config["mysql"]["user"]),
-        "--mysql-password",
-        str(app_config["mysql"]["password"]),
-        "--batch-size",
-        str(payload.batch_size),
-        "--requests-per-minute",
-        str(payload.requests_per_minute),
-        "--concurrency",
-        str(payload.concurrency),
-        "--min-delay-ms",
-        "1000",
-        "--max-delay-ms",
-        "3000",
-        "--rescrape-hours",
-        str(payload.rescrape_hours),
-    ]
+    # Build command based on scraper type
+    if payload.scraper == "hamelyn":
+        urls_file = payload.urls_file or "urls.txt"
+        urls_path = ROOT / urls_file
+        if urls_path.exists():
+            payload.limit = sum(1 for line in urls_path.read_text(encoding="utf-8", errors="ignore").splitlines() if line.strip().startswith("http"))
+        
+        command = [
+            str(PYTHON if PYTHON.exists() else Path(sys.executable)),
+            "scrape_hamelyn.py",
+            "--urls-file",
+            urls_file,
+            "--mysql-host",
+            str(app_config["mysql"]["host"]),
+            "--mysql-port",
+            str(app_config["mysql"]["port"]),
+            "--mysql-user",
+            str(app_config["mysql"]["user"]),
+            "--mysql-password",
+            str(app_config["mysql"]["password"]),
+            "--mysql-db",
+            str(app_config["mysql"]["database"]),
+            "--rpm",
+            str(payload.requests_per_minute),
+        ]
+    else:  # thriftbooks
+        command = [
+            str(PYTHON if PYTHON.exists() else Path(sys.executable)),
+            "thriftbooks_scraper.py",
+            "--limit",
+            str(payload.limit),
+            "--write-mysql",
+            "--mysql-host",
+            str(app_config["mysql"]["host"]),
+            "--mysql-port",
+            str(app_config["mysql"]["port"]),
+            "--mysql-database",
+            str(app_config["mysql"]["database"]),
+            "--mysql-user",
+            str(app_config["mysql"]["user"]),
+            "--mysql-password",
+            str(app_config["mysql"]["password"]),
+            "--batch-size",
+            str(payload.batch_size),
+            "--requests-per-minute",
+            str(payload.requests_per_minute),
+            "--concurrency",
+            str(payload.concurrency),
+            "--min-delay-ms",
+            "1000",
+            "--max-delay-ms",
+            "3000",
+            "--rescrape-hours",
+            str(payload.rescrape_hours),
+        ]
 
     stdout = out_log.open("w", encoding="utf-8")
     stderr = err_log.open("w", encoding="utf-8")
@@ -246,6 +293,7 @@ def start_job(payload: JobRequest) -> dict[str, Any]:
     job_id = insert_job_record(payload, active_job.pid)
     active_job_meta = {
         "id": job_id,
+        "scraper": payload.scraper,
         "limit": payload.limit,
         "requests_per_minute": payload.requests_per_minute,
         "concurrency": payload.concurrency,
@@ -286,6 +334,7 @@ def current_job_state() -> dict[str, Any]:
         "requests_per_minute": active_job_meta.get("requests_per_minute", app_config["scraper"]["requests_per_minute"]),
         "concurrency": active_job_meta.get("concurrency", app_config["scraper"]["concurrency"]),
         "started_at": active_job_meta.get("started_at"),
+        "scraper": active_job_meta.get("scraper", "thriftbooks"),
     }
 
 
