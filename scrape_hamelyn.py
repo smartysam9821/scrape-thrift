@@ -133,7 +133,7 @@ class BookScraper:
 
             try:
                 console.print(f"[blue]→[/blue] Loading page {page_num}: {page_url}")
-                response = await page.goto(page_url, wait_until="domcontentloaded", timeout=30000)
+                response = await page.goto(page_url, wait_until="domcontentloaded", timeout=120000)
 
                 # Stop if page not found or redirected away from category
                 if response and response.status >= 400:
@@ -142,7 +142,7 @@ class BookScraper:
 
                 # Wait for product articles
                 try:
-                    await page.wait_for_selector('article[itemtype="https://schema.org/Product"]', timeout=8000)
+                    await page.wait_for_selector('article[itemtype="https://schema.org/Product"]', timeout=10000)
                 except Exception:
                     console.print(f"[yellow]⚠[/yellow] No articles found on page {page_num} — pagination complete")
                     break
