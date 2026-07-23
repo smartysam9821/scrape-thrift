@@ -25,6 +25,7 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeEl
 BASE_URL = "https://www.hamelyn.co.uk"
 DEFAULT_URLS_FILE = Path("urls.txt")
 DEFAULT_OUTPUT_DIR = Path("results")
+MAX_PAGES_PER_URL = 65
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -111,7 +112,7 @@ class BookScraper:
         clean_base = urlunparse(parsed._replace(query=urlencode(qs, doseq=True)))
 
         consecutive_skips = 0
-        while True:
+        while page_num <= MAX_PAGES_PER_URL:
             # Build page URL
             if page_num == 1:
                 page_url = clean_base
@@ -175,6 +176,9 @@ class BookScraper:
             except Exception as e:
                 console.print(f"[red]✗[/red] Error on page {page_num}: {e} — stopping")
                 break
+
+        if page_num > MAX_PAGES_PER_URL:
+            console.print(f"[yellow]⚠[/yellow] Reached {MAX_PAGES_PER_URL}-page limit for this URL")
 
         return books
 
